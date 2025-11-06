@@ -1,40 +1,8 @@
 import React from 'react';
-import { auth } from '../../config/firebase';
 
 const Homepage = ({ user }) => {
-  const handleLogout = () => {
-    auth.signOut();
-  };
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <h1 className="text-2xl font-bold text-blue-600">GadgetBazar</h1>
-            <nav className="flex items-center space-x-4">
-              {user ? (
-                <div className="flex items-center space-x-4">
-                  <span className="text-gray-700">Welcome, {user.displayName || user.email}!</span>
-                  <a href="/profile" className="text-gray-700 hover:text-blue-600">My Profile</a>
-                  <button 
-                    onClick={handleLogout}
-                    className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-                  >
-                    Logout
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <a href="/login" className="text-gray-700 hover:text-blue-600">Login</a>
-                  <a href="/signup" className="bg-blue-600 text-white px-4 py-2 rounded">Sign Up</a>
-                </>
-              )}
-            </nav>
-          </div>
-        </div>
-      </header>
-
+    <div className="bg-gray-50">
       {/* Hero Section */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <section className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg text-white p-8 mb-12">

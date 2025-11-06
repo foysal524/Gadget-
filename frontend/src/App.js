@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from './config/firebase';
+import Layout from './components/layout/Layout';
 import Homepage from './components/home/Homepage';
 import Login from './components/auth/Login';
 import Signup from './components/auth/Signup';
@@ -23,12 +24,21 @@ function App() {
     <Router>
       <div className="App">
         <Routes>
-          <Route path="/" element={<Homepage user={user} />} />
-          <Route path="/product/:id" element={<ProductDetail user={user} />} />
-          <Route path="/profile" element={user ? <Profile user={user} /> : <Navigate to="/login" />} />
+          {/* Auth routes without layout */}
           <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
           <Route path="/signup" element={user ? <Navigate to="/" /> : <Signup />} />
-          <Route path="*" element={<Navigate to="/" />} />
+          
+          {/* Main app routes with layout */}
+          <Route path="/*" element={
+            <Layout>
+              <Routes>
+                <Route path="/" element={<Homepage user={user} />} />
+                <Route path="/product/:id" element={<ProductDetail user={user} />} />
+                <Route path="/profile" element={user ? <Profile user={user} /> : <Navigate to="/login" />} />
+                <Route path="*" element={<Navigate to="/" />} />
+              </Routes>
+            </Layout>
+          } />
         </Routes>
       </div>
     </Router>

@@ -47,7 +47,7 @@ const Signup = () => {
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-blue-600">GadgetBazar</h1>
+          <img src="/Logo_GadgetBazar.png" alt="GadgetBazar" className="h-12 w-auto mx-auto" />
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
             Create your account
           </h2>
