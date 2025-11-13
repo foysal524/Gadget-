@@ -23,10 +23,14 @@ export const CartProvider = ({ children }) => {
       const res = await fetch('http://localhost:8000/api/cart', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      if (!res.ok) {
+        setCartCount(getGuestCartCount());
+        return;
+      }
       const data = await res.json();
-      setCartCount(data.data.cart.totalItems || 0);
+      setCartCount(data.data?.cart?.totalItems || 0);
     } catch (error) {
-      console.error('Error fetching cart count:', error);
+      setCartCount(getGuestCartCount());
     }
   };
 
@@ -44,8 +48,12 @@ export const CartProvider = ({ children }) => {
       const res = await fetch('http://localhost:8000/api/cart', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      if (!res.ok) {
+        fetchCartCount();
+        return;
+      }
       const data = await res.json();
-      const savedCart = data.data.cart.items || [];
+      const savedCart = data.data?.cart?.items || [];
 
       if (savedCart.length > 0 && guestCart.length > 0) {
         setCartConflict({ savedCount: savedCart.length, guestCount: guestCart.length, guestCart });
@@ -58,7 +66,7 @@ export const CartProvider = ({ children }) => {
         }
       }
     } catch (error) {
-      console.error('Error checking cart conflict:', error);
+      fetchCartCount();
     }
   };
 

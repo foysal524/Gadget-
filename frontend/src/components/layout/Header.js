@@ -15,6 +15,8 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 const Header = () => {
   const [user] = useAuthState(auth);
   const [searchQuery, setSearchQuery] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const { cartCount } = useCart();
   const [unreadCount, setUnreadCount] = useState(0);
   const navigate = useNavigate();
@@ -33,12 +35,15 @@ const Header = () => {
   }, [user]);
 
   const fetchNotifications = async () => {
+    if (!user) {
+      setUnreadCount(0);
+      return;
+    }
     try {
       const { apiCall } = await import('../../utils/api');
       const res = await apiCall('/api/notifications');
       setUnreadCount(res.data?.unreadCount || res.unreadCount || 0);
     } catch (error) {
-      console.error('Error fetching notifications:', error);
       setUnreadCount(0);
     }
   };
@@ -56,25 +61,55 @@ const Header = () => {
     e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+      setShowSuggestions(false);
     }
   };
 
+  const fetchSuggestions = async (query) => {
+    if (query.length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    try {
+      const res = await fetch(`http://localhost:8000/api/products?search=${encodeURIComponent(query)}&limit=5`);
+      const data = await res.json();
+      setSuggestions(data.data?.products || []);
+    } catch (error) {
+      setSuggestions([]);
+    }
+  };
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    setShowSuggestions(true);
+    fetchSuggestions(value);
+  };
+
+  const selectSuggestion = (product) => {
+    navigate(`/product/${product.id}`);
+    setSearchQuery('');
+    setShowSuggestions(false);
+  };
+
   return (
-    <header className="bg-white/70 backdrop-blur-xl shadow-lg border-b border-white/20">
+    <header className="bg-white/70 backdrop-blur-xl shadow-lg border-b border-white/20 relative z-50">
       <div className="w-full px-4">
         <div className="flex justify-between items-center h-16 animate-fade-in">
           {/* Logo */}
           <Link to="/" className="flex items-center transform hover:scale-105 transition-transform duration-300">
-            <img src="/logo.png" alt="GadgetBazar" className="h-10 w-auto" />
+            <img src="/logo.svg" alt="GadgetBazar" className="h-10 w-auto" />
           </Link>
 
           {/* Search Bar */}
-          <form onSubmit={handleSearch} className="flex-1 max-w-lg mx-8">
+          <form onSubmit={handleSearch} className="flex-1 max-w-lg mx-8 relative">
             <div className="relative">
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={handleSearchChange}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                 placeholder="Search products..."
                 className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 shadow-md text-gray-900 placeholder-gray-500 font-medium"
               />
@@ -85,6 +120,29 @@ const Header = () => {
                 <SearchIcon />
               </button>
             </div>
+            
+            {/* Search Suggestions */}
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute top-full mt-2 w-full bg-white rounded-lg shadow-xl border border-gray-200 z-[9999] max-h-96 overflow-y-auto">
+                {suggestions.map((product) => (
+                  <div
+                    key={product.id}
+                    onClick={() => selectSuggestion(product)}
+                    className="flex items-center p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
+                  >
+                    <img
+                      src={product.images[0] || '/placeholder.png'}
+                      alt={product.name}
+                      className="w-12 h-12 object-cover rounded"
+                    />
+                    <div className="ml-3 flex-1">
+                      <p className="text-sm font-medium text-gray-900">{product.name}</p>
+                      <p className="text-sm text-blue-600 font-semibold">BDT {product.price.toLocaleString()}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </form>
 
           {/* User Actions */}

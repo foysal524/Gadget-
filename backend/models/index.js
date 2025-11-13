@@ -8,6 +8,7 @@ const Review = require('./Review');
 const RestockRequest = require('./RestockRequest');
 const Notification = require('./Notification');
 const Chat = require('./Chat');
+const Address = require('./Address');
 
 // Define associations
 Product.belongsTo(Category, { foreignKey: 'categoryId', as: 'category' });
@@ -33,6 +34,9 @@ Notification.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 Chat.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 User.hasMany(Chat, { foreignKey: 'userId', as: 'chats' });
 
+Address.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+User.hasMany(Address, { foreignKey: 'userId', as: 'addresses' });
+
 module.exports = {
   User,
   Category,
@@ -43,5 +47,6 @@ module.exports = {
   Review,
   RestockRequest,
   Notification,
-  Chat
+  Chat,
+  Address
 };

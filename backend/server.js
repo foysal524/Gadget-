@@ -30,6 +30,9 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/restock', require('./routes/restock'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/chat', require('./routes/chat'));
+app.use('/api/ai-chat', require('./routes/aiChat'));
+app.use('/api/addresses', require('./routes/addresses'));
+app.use('/api/payment', require('./routes/payment'));
 
 // Health check
 app.get('/health', (req, res) => {

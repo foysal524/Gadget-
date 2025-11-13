@@ -12,10 +12,12 @@ const ProductDetail = ({ user }) => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedVariation, setSelectedVariation] = useState(null);
   const [showFullDescription, setShowFullDescription] = useState(false);
+  const [inWishlist, setInWishlist] = useState(false);
 
   useEffect(() => {
     fetchProduct();
-  }, [id]);
+    if (user) checkWishlist();
+  }, [id, user]);
 
   const fetchProduct = async () => {
     try {
@@ -26,6 +28,28 @@ const ProductDetail = ({ user }) => {
       console.error('Error fetching product:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkWishlist = async () => {
+    try {
+      const res = await apiCall(`/api/wishlist/check/${id}`);
+      setInWishlist(res.data?.inWishlist || false);
+    } catch (error) {
+      console.error('Error checking wishlist:', error);
+    }
+  };
+
+  const toggleWishlist = async () => {
+    if (!user) {
+      alert('Please login to add to wishlist');
+      return;
+    }
+    try {
+      const res = await apiCall(`/api/wishlist/toggle/${id}`, { method: 'POST' });
+      setInWishlist(res.data?.inWishlist || false);
+    } catch (error) {
+      console.error('Error toggling wishlist:', error);
     }
   };
 
@@ -232,16 +256,23 @@ const ProductDetail = ({ user }) => {
               </div>
             )}
 
-            {product.inStock ? (
+            <div className="flex gap-2 mb-6">
               <button
-                onClick={handleAddToCart}
-                className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 mb-6"
+                onClick={toggleWishlist}
+                className={`px-6 py-3 rounded-lg border-2 ${inWishlist ? 'bg-red-50 border-red-500 text-red-600' : 'border-gray-300 text-gray-600 hover:border-red-500'}`}
               >
-                Add to Cart
+                {inWishlist ? '❤️' : '🤍'}
               </button>
-            ) : (
-              <button
-                onClick={async () => {
+              {product.inStock ? (
+                <button
+                  onClick={handleAddToCart}
+                  className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700"
+                >
+                  Add to Cart
+                </button>
+              ) : (
+                <button
+                  onClick={async () => {
                   if (!user) {
                     alert('Please login to request restock');
                     return;
@@ -268,12 +299,13 @@ const ProductDetail = ({ user }) => {
                       alert(`Error: ${error.message || 'Failed to submit request'}`);
                     }
                   }
-                }}
-                className="w-full bg-orange-600 text-white py-3 px-6 rounded-lg hover:bg-orange-700 mb-6"
-              >
-                Request Restock Notification
-              </button>
-            )}
+                  }}
+                  className="flex-1 bg-orange-600 text-white py-3 px-6 rounded-lg hover:bg-orange-700"
+                >
+                  Request Restock Notification
+                </button>
+              )}
+            </div>
 
             {product.specifications && Object.keys(product.specifications).length > 0 && (
               <div className="mb-6 pb-6 border-b">

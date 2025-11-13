@@ -19,7 +19,7 @@ exports.getOrders = async (req, res) => {
             id: product.id,
             name: product.name,
             stockQuantity: product.stockQuantity,
-            image: product.images[0]
+            images: product.images
           } : null
         };
       }));

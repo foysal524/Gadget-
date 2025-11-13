@@ -98,3 +98,56 @@ exports.removeFromWishlist = async (req, res) => {
     });
   }
 };
+
+exports.toggleWishlist = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const user = await User.findOne({ where: { uid: req.user.uid } });
+
+    const existing = await Wishlist.findOne({
+      where: { userId: user.id, productId }
+    });
+
+    if (existing) {
+      await existing.destroy();
+      return res.json({
+        success: true,
+        data: { inWishlist: false },
+        message: 'Removed from wishlist'
+      });
+    }
+
+    await Wishlist.create({ userId: user.id, productId });
+    res.json({
+      success: true,
+      data: { inWishlist: true },
+      message: 'Added to wishlist'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: { code: 'INTERNAL_ERROR', message: error.message }
+    });
+  }
+};
+
+exports.checkWishlist = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const user = await User.findOne({ where: { uid: req.user.uid } });
+
+    const exists = await Wishlist.findOne({
+      where: { userId: user.id, productId }
+    });
+
+    res.json({
+      success: true,
+      data: { inWishlist: !!exists }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: { code: 'INTERNAL_ERROR', message: error.message }
+    });
+  }
+};

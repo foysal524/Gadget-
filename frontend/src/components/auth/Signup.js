@@ -47,7 +47,7 @@ const Signup = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md animate-slide-up">
         <div className="text-center">
-          <img src="/Logo_GadgetBazar.png" alt="GadgetBazar" className="h-12 w-auto mx-auto transform hover:scale-110 transition-transform duration-300" />
+          <img src="/logo.svg" alt="GadgetBazar" className="h-12 w-auto mx-auto transform hover:scale-110 transition-transform duration-300" />
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900 animate-fade-in">
             Create your account
           </h2>

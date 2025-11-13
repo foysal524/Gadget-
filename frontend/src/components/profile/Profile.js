@@ -245,19 +245,14 @@ const Profile = ({ user }) => {
           <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             
-            <button className="bg-green-600/90 backdrop-blur-lg text-white p-4 rounded-2xl hover:bg-green-700 text-left transform hover:scale-105 hover:shadow-xl transition-all duration-200 border border-white/20">
+            <button onClick={() => window.location.href = '/wishlist'} className="bg-green-600/90 backdrop-blur-lg text-white p-4 rounded-2xl hover:bg-green-700 text-left transform hover:scale-105 hover:shadow-xl transition-all duration-200 border border-white/20">
               <h3 className="font-semibold">My Wishlist</h3>
               <p className="text-sm opacity-90">View saved products</p>
             </button>
             
-            <button className="bg-purple-600/90 backdrop-blur-lg text-white p-4 rounded-2xl hover:bg-purple-700 text-left transform hover:scale-105 hover:shadow-xl transition-all duration-200 border border-white/20">
+            <button onClick={() => window.location.href = '/address-book'} className="bg-purple-600/90 backdrop-blur-lg text-white p-4 rounded-2xl hover:bg-purple-700 text-left transform hover:scale-105 hover:shadow-xl transition-all duration-200 border border-white/20">
               <h3 className="font-semibold">Address Book</h3>
               <p className="text-sm opacity-90">Manage shipping addresses</p>
-            </button>
-            
-            <button className="bg-orange-600/90 backdrop-blur-lg text-white p-4 rounded-2xl hover:bg-orange-700 text-left transform hover:scale-105 hover:shadow-xl transition-all duration-200 border border-white/20">
-              <h3 className="font-semibold">Support</h3>
-              <p className="text-sm opacity-90">Get help with your account</p>
             </button>
           </div>
         </div>
@@ -301,7 +296,8 @@ const Profile = ({ user }) => {
                   <div className="border rounded">
                     {selectedOrder.items && (typeof selectedOrder.items === 'string' ? JSON.parse(selectedOrder.items) : selectedOrder.items).map((item, idx) => (
                       <div key={idx} className="p-3 border-b last:border-b-0">
-                        <div className="flex justify-between items-start">
+                        <div className="flex gap-4 items-start">
+                          <img src={item.product?.images?.[0] || '/placeholder.png'} alt={item.product?.name} className="w-16 h-16 object-cover rounded" />
                           <div className="flex-1">
                             <p className="font-semibold">{item.product?.name || 'Product'}</p>
                             <p className="text-xs text-gray-500 font-mono">ID: {item.productId.slice(0, 8)}...</p>

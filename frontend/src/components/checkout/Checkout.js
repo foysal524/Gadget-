@@ -13,6 +13,8 @@ const Checkout = ({ user }) => {
     phone: '',
     paymentMethod: 'cash'
   });
+  const [addresses, setAddresses] = useState([]);
+  const [selectedAddress, setSelectedAddress] = useState('');
 
   useEffect(() => {
     if (!user) {
@@ -20,6 +22,7 @@ const Checkout = ({ user }) => {
       return;
     }
     fetchCart();
+    fetchAddresses();
   }, [user]);
 
   const fetchCart = async () => {
@@ -33,10 +36,45 @@ const Checkout = ({ user }) => {
     }
   };
 
+  const fetchAddresses = async () => {
+    try {
+      const res = await apiCall('/api/addresses');
+      setAddresses(res.data?.addresses || []);
+      const defaultAddr = res.data?.addresses?.find(a => a.isDefault);
+      if (defaultAddr) {
+        setSelectedAddress(defaultAddr.id);
+        setFormData({
+          ...formData,
+          address: `${defaultAddr.address}, ${defaultAddr.city} ${defaultAddr.postalCode}`,
+          phone: defaultAddr.phone
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching addresses:', error);
+    }
+  };
+
+  const handleAddressSelect = (e) => {
+    const addrId = e.target.value;
+    setSelectedAddress(addrId);
+    if (addrId === 'new') {
+      setFormData({ ...formData, address: '', phone: '' });
+    } else {
+      const addr = addresses.find(a => a.id === addrId);
+      if (addr) {
+        setFormData({
+          ...formData,
+          address: `${addr.address}, ${addr.city} ${addr.postalCode}`,
+          phone: addr.phone
+        });
+      }
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await apiCall('/api/orders', {
+      const orderRes = await apiCall('/api/orders', {
         method: 'POST',
         body: JSON.stringify({
           items: cart.items.map(item => ({
@@ -52,9 +90,17 @@ const Checkout = ({ user }) => {
         })
       });
       
-      refreshCart();
-      alert('Order placed successfully!');
-      navigate('/profile');
+      if (formData.paymentMethod === 'sslcommerz') {
+        const paymentRes = await apiCall('/api/payment/initiate', {
+          method: 'POST',
+          body: JSON.stringify({ orderId: orderRes.data.order.id })
+        });
+        window.location.href = paymentRes.data.paymentUrl;
+      } else {
+        refreshCart();
+        alert('Order placed successfully!');
+        navigate('/profile');
+      }
     } catch (error) {
       console.error('Error placing order:', error);
       alert('Error placing order: ' + (error.message || 'Please try again'));
@@ -76,6 +122,23 @@ const Checkout = ({ user }) => {
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-bold mb-4">Shipping Information</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {addresses.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium mb-1">Select Saved Address</label>
+                  <select
+                    value={selectedAddress}
+                    onChange={handleAddressSelect}
+                    className="w-full border p-2 rounded"
+                  >
+                    <option value="new">Enter new address</option>
+                    {addresses.map(addr => (
+                      <option key={addr.id} value={addr.id}>
+                        {addr.label} - {addr.fullName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium mb-1">Phone Number</label>
                 <input
@@ -104,7 +167,7 @@ const Checkout = ({ user }) => {
                   className="w-full border p-2 rounded"
                 >
                   <option value="cash">Cash on Delivery</option>
-                  <option value="card">Credit/Debit Card</option>
+                  <option value="sslcommerz">SSLCommerz (Card/Mobile Banking)</option>
                   <option value="bkash">bKash</option>
                 </select>
               </div>

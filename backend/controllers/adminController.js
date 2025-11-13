@@ -1,4 +1,4 @@
-const { Product, Category, Order, User, RestockRequest, Notification } = require('../models');
+const { Product, Category, Order, User, RestockRequest, Notification, Wishlist } = require('../models');
 const { Op } = require('sequelize');
 
 // Dashboard stats
@@ -65,6 +65,7 @@ exports.updateProduct = async (req, res) => {
     }
 
     const wasOutOfStock = !product.inStock;
+    const oldPrice = product.price;
     
     // Auto-update inStock based on stockQuantity
     if (req.body.stockQuantity !== undefined) {
@@ -73,8 +74,26 @@ exports.updateProduct = async (req, res) => {
     
     await product.update(req.body);
     
-    // If product was out of stock and now is in stock, notify users who requested restock
+    // Check for price drop and notify wishlist users
+    if (req.body.price && req.body.price < oldPrice) {
+      const wishlistItems = await Wishlist.findAll({
+        where: { productId: product.id }
+      });
+      
+      for (const item of wishlistItems) {
+        await Notification.create({
+          userId: item.userId,
+          type: 'price_drop',
+          title: 'Price Drop Alert!',
+          message: `${product.name} price dropped from BDT ${oldPrice} to BDT ${req.body.price}`,
+          data: { productId: product.id }
+        });
+      }
+    }
+    
+    // If product was out of stock and now is in stock, notify users
     if (wasOutOfStock && product.inStock) {
+      // Notify restock request users
       const restockRequests = await RestockRequest.findAll({
         where: { productId: product.id, status: 'pending' }
       });
@@ -89,8 +108,22 @@ exports.updateProduct = async (req, res) => {
           data: { productId: product.id }
         });
         
-        // Mark restock request as completed
         await request.update({ status: 'restocked' });
+      }
+      
+      // Notify wishlist users
+      const wishlistItems = await Wishlist.findAll({
+        where: { productId: product.id }
+      });
+      
+      for (const item of wishlistItems) {
+        await Notification.create({
+          userId: item.userId,
+          type: 'restock',
+          title: 'Wishlist Item Back in Stock!',
+          message: `${product.name} from your wishlist is now available!`,
+          data: { productId: product.id }
+        });
       }
     }
     
@@ -219,7 +252,7 @@ exports.getAllOrders = async (req, res) => {
             id: product.id,
             name: product.name,
             stockQuantity: product.stockQuantity,
-            image: product.images[0]
+            images: product.images
           } : null
         };
       }));

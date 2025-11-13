@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { apiCall } from '../../utils/api';
 
-const ProductCatalog = () => {
+const ProductCatalog = ({ deals = false }) => {
   const { category } = useParams();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -11,7 +11,7 @@ const ProductCatalog = () => {
 
   useEffect(() => {
     fetchProducts();
-  }, [category]);
+  }, [category, deals]);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -24,7 +24,14 @@ const ProductCatalog = () => {
         url = '/api/products?limit=100';
       }
       const res = await apiCall(url);
-      setProducts(res.data.products || []);
+      let fetchedProducts = res.data.products || [];
+      
+      // Filter for deals if deals prop is true
+      if (deals) {
+        fetchedProducts = fetchedProducts.filter(product => product.isDeal);
+      }
+      
+      setProducts(fetchedProducts);
     } catch (error) {
       console.error('Error fetching products:', error);
       setProducts([]);
@@ -46,12 +53,14 @@ const ProductCatalog = () => {
           <ol className="flex items-center space-x-2 text-sm text-gray-500">
             <li><Link to="/" className="hover:text-blue-600">Home</Link></li>
             <li>/</li>
-            <li className="text-gray-900">{category || 'All Products'}</li>
+            <li className="text-gray-900">{deals ? 'Hot Deals' : category || 'All Products'}</li>
           </ol>
         </nav>
 
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">{category ? decodeURIComponent(category).replace(/&amp;/g, '&') : 'All Products'}</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            {deals ? 'Hot Deals' : category ? decodeURIComponent(category).replace(/&amp;/g, '&') : 'All Products'}
+          </h1>
           <p className="text-gray-600">{filteredProducts.length} products found</p>
         </div>
 

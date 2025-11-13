@@ -30,11 +30,25 @@ const ProductManagement = () => {
   const [specKey, setSpecKey] = useState('');
   const [specValue, setSpecValue] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredProducts, setFilteredProducts] = useState([]);
 
   useEffect(() => {
     fetchProducts();
     fetchCategories();
   }, []);
+
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      const filtered = products.filter(p => 
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.brand?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredProducts(filtered);
+    } else {
+      setFilteredProducts(products);
+    }
+  }, [searchQuery, products]);
 
   const fetchProducts = async () => {
     try {
@@ -232,12 +246,21 @@ const ProductManagement = () => {
     <div className="p-8 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Product Management</h1>
-        <button
-          onClick={() => { setShowForm(true); setEditingProduct(null); resetForm(); }}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          Add Product
-        </button>
+        <div className="flex gap-4">
+          <input
+            type="text"
+            placeholder="Search products..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="border px-4 py-2 rounded w-64"
+          />
+          <button
+            onClick={() => { setShowForm(true); setEditingProduct(null); resetForm(); }}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Add Product
+          </button>
+        </div>
       </div>
 
       {showForm && (
@@ -525,6 +548,7 @@ const ProductManagement = () => {
         <table className="w-full">
           <thead className="bg-gray-100">
             <tr>
+              <th className="text-left p-3">Image</th>
               <th className="text-left p-3">Name</th>
               <th className="text-left p-3">Category</th>
               <th className="text-left p-3">Price</th>
@@ -534,8 +558,11 @@ const ProductManagement = () => {
             </tr>
           </thead>
           <tbody>
-            {(products || []).map(product => (
+            {(filteredProducts || []).map(product => (
               <tr key={product.id} className="border-b">
+                <td className="p-3">
+                  <img src={product.images?.[0] || '/placeholder.png'} alt={product.name} className="w-16 h-16 object-cover rounded" />
+                </td>
                 <td className="p-3">{product.name}</td>
                 <td className="p-3">{product.category?.name}</td>
                 <td className="p-3">BDT {product.price.toLocaleString()}</td>

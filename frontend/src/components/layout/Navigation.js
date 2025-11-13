@@ -22,6 +22,7 @@ const Navigation = () => {
   const [user] = useAuthState(auth);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [hoveredCategory, setHoveredCategory] = useState(null);
   const location = useLocation();
 
   useEffect(() => {
@@ -34,6 +35,7 @@ const Navigation = () => {
       const data = await res.json();
       if (data.success) {
         setCategories(data.data.categories);
+        console.log('Categories loaded:', data.data.categories.map(c => ({ name: c.name, subs: c.subcategories?.length || 0 })));
       }
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -61,9 +63,9 @@ const Navigation = () => {
 
   return (
     <>
-      <nav className="bg-white/50 backdrop-blur-lg border-b border-white/20">
+      <nav className="bg-white/50 backdrop-blur-lg border-b border-white/20 relative z-30">
         <div className="w-full px-4">
-          <div className="flex items-center justify-between h-14">
+          <div className="flex items-center justify-between h-14 relative">
             {/* Menu Button */}
             <button
               onMouseEnter={() => setIsSidebarOpen(true)}
@@ -74,7 +76,7 @@ const Navigation = () => {
             </button>
 
             {/* Center Buttons */}
-            <div className="flex space-x-3">
+            <div className="flex space-x-3 relative z-50">
               <Link
                 to="/"
                 className="bg-white/60 backdrop-blur-lg text-gray-700 hover:text-blue-600 px-4 py-2 rounded-2xl text-sm font-medium shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 border border-white/30 flex items-center space-x-1"
@@ -82,13 +84,45 @@ const Navigation = () => {
                 <HomeIcon fontSize="small" />
                 <span>Home</span>
               </Link>
-              <Link
-                to="/products"
-                className="bg-white/60 backdrop-blur-lg text-gray-700 hover:text-blue-600 px-4 py-2 rounded-2xl text-sm font-medium shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 border border-white/30 flex items-center space-x-1"
-              >
-                <ShoppingBagIcon fontSize="small" />
-                <span>All Products</span>
-              </Link>
+              {categories.slice(0, 5).map((cat) => {
+                const IconComponent = getCategoryIcon(cat.name);
+                const hasSubcategories = cat.subcategories && cat.subcategories.length > 0;
+                return (
+                  <div
+                    key={cat.id}
+                    className="relative"
+                    onMouseLeave={() => setHoveredCategory(null)}
+                  >
+                    <div 
+                      className="bg-white/60 backdrop-blur-lg text-gray-700 hover:text-blue-600 px-4 py-2 rounded-2xl text-sm font-medium shadow-md hover:shadow-lg transition-all duration-200 border border-white/30 flex items-center space-x-1 whitespace-nowrap cursor-pointer"
+                      onMouseEnter={() => hasSubcategories && setHoveredCategory(cat.id)}
+                    >
+                      <IconComponent fontSize="small" />
+                      <span>{cat.name}</span>
+                      {hasSubcategories && <span className="ml-1 text-xs">▼</span>}
+                    </div>
+                    {hasSubcategories && hoveredCategory === cat.id && (
+                      <div className="absolute top-full left-0 bg-white rounded-xl shadow-2xl border-2 border-blue-500 py-2 min-w-[200px] z-[9999]" style={{display: 'block'}}>
+                        <Link
+                          to={`/category/${cat.name}`}
+                          className="block px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b"
+                        >
+                          All {cat.name}
+                        </Link>
+                        {cat.subcategories.map((sub) => (
+                          <Link
+                            key={sub.id}
+                            to={`/category/${sub.name}`}
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                          >
+                            {sub.name}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
               <Link
                 to="/deals"
                 className="bg-gradient-to-r from-red-500/80 to-orange-500/80 backdrop-blur-lg text-white px-4 py-2 rounded-2xl text-sm font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 border border-white/30 flex items-center space-x-1"
@@ -216,6 +250,14 @@ const Navigation = () => {
               >
                 <LocalFireDepartmentIcon className="mr-3" />
                 <span className="font-medium">Hot Deals</span>
+              </Link>
+              <Link
+                to="/discounted"
+                onClick={() => setIsSidebarOpen(false)}
+                className="flex items-center px-4 py-3 rounded-2xl text-orange-600 hover:bg-orange-500/10 hover:backdrop-blur-lg hover:shadow-md transition-all duration-200 transform hover:translate-x-2"
+              >
+                <LocalFireDepartmentIcon className="mr-3" />
+                <span className="font-medium">Discounted</span>
               </Link>
             </nav>
           </div>

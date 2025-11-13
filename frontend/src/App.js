@@ -11,6 +11,7 @@ import Profile from './components/profile/Profile';
 import ProductDetail from './components/product/ProductDetail';
 import ProductCatalog from './components/catalog/ProductCatalog';
 import SearchResults from './components/catalog/SearchResults';
+import Discounted from './components/catalog/Discounted';
 import AdminLayout from './components/admin/AdminLayout';
 import AdminDashboard from './components/admin/AdminDashboard';
 import ProductManagement from './components/admin/ProductManagement';
@@ -28,6 +29,11 @@ import Checkout from './components/checkout/Checkout';
 import CartMergeModal from './components/cart/CartMergeModal';
 import Notifications from './components/notifications/Notifications';
 import About from './components/about/About';
+import Wishlist from './components/wishlist/Wishlist';
+import Orders from './components/orders/Orders';
+import AddressBook from './components/address/AddressBook';
+import PaymentSuccess from './components/payment/PaymentSuccess';
+import PaymentFailed from './components/payment/PaymentFailed';
 
 function AppContent() {
   const [user, loading] = useAuthState(auth);
@@ -78,10 +84,17 @@ function AppContent() {
           <Route path="/product/:id" element={<Layout><ProductDetail user={user} /></Layout>} />
           <Route path="/profile" element={user ? <Layout><Profile user={user} /></Layout> : <Navigate to="/login" />} />
           <Route path="/notifications" element={user ? <Layout><Notifications user={user} /></Layout> : <Navigate to="/login" />} />
+          <Route path="/wishlist" element={user ? <Layout><Wishlist user={user} /></Layout> : <Navigate to="/login" />} />
+          <Route path="/orders" element={user ? <Layout><Orders user={user} /></Layout> : <Navigate to="/login" />} />
+          <Route path="/address-book" element={user ? <Layout><AddressBook user={user} /></Layout> : <Navigate to="/login" />} />
+          <Route path="/payment-success" element={<Layout><PaymentSuccess /></Layout>} />
+          <Route path="/payment-failed" element={<Layout><PaymentFailed /></Layout>} />
           <Route path="/cart" element={<Layout><Cart user={user} /></Layout>} />
           <Route path="/checkout" element={user ? <Layout><Checkout user={user} /></Layout> : <Navigate to="/login" />} />
           <Route path="/category/:category" element={<Layout><ProductCatalog /></Layout>} />
           <Route path="/products" element={<Layout><ProductCatalog /></Layout>} />
+          <Route path="/deals" element={<Layout><ProductCatalog deals={true} /></Layout>} />
+          <Route path="/discounted" element={<Layout><Discounted /></Layout>} />
           <Route path="/search" element={<Layout><SearchResults /></Layout>} />
           <Route path="/about" element={<Layout><About /></Layout>} />
         </Routes>

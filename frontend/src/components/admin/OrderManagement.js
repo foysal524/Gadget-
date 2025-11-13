@@ -147,7 +147,8 @@ const OrderManagement = () => {
                 <div className="border rounded">
                   {selectedOrder.items && (typeof selectedOrder.items === 'string' ? JSON.parse(selectedOrder.items) : selectedOrder.items).map((item, idx) => (
                     <div key={idx} className="p-3 border-b last:border-b-0">
-                      <div className="flex justify-between items-start mb-2">
+                      <div className="flex gap-4 items-start">
+                        <img src={item.product?.images?.[0] || '/placeholder.png'} alt={item.product?.name} className="w-20 h-20 object-cover rounded" />
                         <div className="flex-1">
                           <p className="font-semibold">{item.product?.name || 'Product'}</p>
                           <p className="text-xs text-gray-500 font-mono">ID: {item.productId.slice(0, 8)}...</p>
