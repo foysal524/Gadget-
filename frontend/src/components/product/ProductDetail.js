@@ -1,69 +1,88 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { apiCall } from '../../utils/api';
+import { useCart } from '../../context/CartContext';
 
 const ProductDetail = ({ user }) => {
   const { id } = useParams();
+  const { refreshCart } = useCart();
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [selectedVariation, setSelectedVariation] = useState(null);
+  const [showFullDescription, setShowFullDescription] = useState(false);
 
-  // Mock product data - replace with API call
-  const product = {
-    id: id,
-    name: 'Wireless Power Bank 20000mAh',
-    price: 2500,
-    originalPrice: 3000,
-    images: [
-      '/api/placeholder/400/400',
-      '/api/placeholder/400/400',
-      '/api/placeholder/400/400'
-    ],
-    rating: 4.5,
-    reviewCount: 128,
-    inStock: true,
-    stockQuantity: 50,
-    description: 'High-capacity wireless power bank with fast charging technology. Compatible with all smartphones and devices.',
-    specifications: {
-      'Capacity': '20000mAh',
-      'Input': '5V/2A, 9V/2A',
-      'Output': '5V/3A, 9V/2A, 12V/1.5A',
-      'Wireless Output': '10W/7.5W/5W',
-      'Weight': '450g',
-      'Dimensions': '150 × 68 × 28mm'
-    },
-    features: [
-      'Wireless charging capability',
-      'Fast charging technology',
-      'LED power indicator',
-      'Multiple device charging',
-      'Compact and portable design'
-    ]
+  useEffect(() => {
+    fetchProduct();
+  }, [id]);
+
+  const fetchProduct = async () => {
+    try {
+      const res = await apiCall(`/api/products/${id}`);
+      setProduct(res.data.product);
+      setSelectedImage(0);
+    } catch (error) {
+      console.error('Error fetching product:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleAddToCart = () => {
-    if (!user) {
-      alert('Please login to add items to cart');
+  const handleAddToCart = async () => {
+    if (product.variations?.length > 0) {
+      if (selectedVariation === null) {
+        alert('Please select a variation');
+        return;
+      }
+      const variation = product.variations[selectedVariation];
+      if (!user) {
+        const { addToGuestCart } = await import('../../utils/guestCart');
+        addToGuestCart(product.id, quantity, variation);
+      } else {
+        try {
+          await apiCall('/api/cart/items', {
+            method: 'POST',
+            body: JSON.stringify({ productId: product.id, quantity, variation })
+          });
+        } catch (error) {
+          alert(`Error adding to cart`);
+          return;
+        }
+      }
+      refreshCart();
+      alert('Added to cart!');
+      setSelectedVariation(null);
+      setQuantity(1);
       return;
     }
-    alert(`Added ${quantity} ${product.name} to cart`);
-  };
-
-  const handleAddToWishlist = () => {
+    
     if (!user) {
-      alert('Please login to add items to wishlist');
+      const { addToGuestCart } = await import('../../utils/guestCart');
+      addToGuestCart(product.id, quantity, null);
+      refreshCart();
+      alert('Added to cart!');
       return;
     }
-    alert(`Added ${product.name} to wishlist`);
+    try {
+      await apiCall('/api/cart/items', {
+        method: 'POST',
+        body: JSON.stringify({ productId: product.id, quantity, variation: null })
+      });
+      refreshCart();
+      alert('Added to cart!');
+    } catch (error) {
+      alert('Error adding to cart');
+    }
   };
 
-  const formatPrice = (price) => {
-    return `BDT ${price.toLocaleString()}`;
-  };
+  if (loading) return <div className="p-8">Loading...</div>;
+  if (!product) return <div className="p-8">Product not found</div>;
 
   return (
     <div className="bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
-        {/* Breadcrumb */}
-        <nav className="mb-8 animate-slide-up">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <nav className="mb-8">
           <ol className="flex items-center space-x-2 text-sm text-gray-500">
             <li><a href="/" className="hover:text-blue-600">Home</a></li>
             <li>/</li>
@@ -74,129 +93,219 @@ const ProductDetail = ({ user }) => {
         </nav>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Product Images */}
-          <div className="animate-scale-in">
-            <div className="mb-4 overflow-hidden rounded-lg">
+          <div>
+            <div className="mb-4 bg-white rounded-lg p-4">
               <img
-                src={product.images[selectedImage]}
+                src={product.images?.[selectedImage] || 'https://via.placeholder.com/500'}
                 alt={product.name}
-                className="w-full h-96 object-cover rounded-lg transform hover:scale-105 transition-transform duration-500"
+                className="w-full h-96 object-contain rounded-lg"
               />
             </div>
-            <div className="flex space-x-2">
-              {product.images.map((image, index) => (
-                <button
-                  key={index}
-                  onClick={() => setSelectedImage(index)}
-                  className={`w-20 h-20 rounded-lg overflow-hidden border-2 transform hover:scale-110 transition-all duration-200 ${
-                    selectedImage === index ? 'border-blue-600 scale-105' : 'border-gray-200'
-                  }`}
-                >
-                  <img src={image} alt={`${product.name} ${index + 1}`} className="w-full h-full object-cover" />
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Product Info */}
-          <div className="animate-slide-up">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4 animate-fade-in">{product.name}</h1>
-            
-            {/* Rating */}
-            <div className="flex items-center mb-4">
-              <div className="flex text-yellow-400">
-                {[...Array(5)].map((_, i) => (
-                  <svg
-                    key={i}
-                    className={`w-5 h-5 ${i < Math.floor(product.rating) ? 'fill-current' : 'text-gray-300'}`}
-                    viewBox="0 0 20 20"
+            {product.images?.length > 1 && (
+              <div className="flex space-x-2 overflow-x-auto pb-2">
+                {product.images.map((image, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedImage(index)}
+                    className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 ${
+                      selectedImage === index ? 'border-blue-600' : 'border-gray-200'
+                    }`}
                   >
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
+                    <img src={image} alt={`${product.name} ${index + 1}`} className="w-full h-full object-cover" />
+                  </button>
                 ))}
               </div>
+            )}
+          </div>
+
+          <div className="bg-white rounded-lg p-6">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
+            {product.brand && <p className="text-gray-600 mb-4">Brand: {product.brand}</p>}
+            
+            <div className="flex items-center mb-4">
+              <span className="text-yellow-400 text-lg">⭐ {product.rating}</span>
               <span className="ml-2 text-gray-600">({product.reviewCount} reviews)</span>
             </div>
 
-            {/* Price */}
-            <div className="mb-6">
-              <span className="text-3xl font-bold text-blue-600">{formatPrice(product.price)}</span>
+            <div className="mb-6 pb-6 border-b">
+              <span className="text-4xl font-bold text-blue-600">৳{product.price.toLocaleString()}</span>
               {product.originalPrice > product.price && (
-                <span className="ml-3 text-xl text-gray-500 line-through">
-                  {formatPrice(product.originalPrice)}
-                </span>
+                <>
+                  <span className="ml-3 text-xl text-gray-500 line-through">
+                    ৳{product.originalPrice.toLocaleString()}
+                  </span>
+                  <span className="ml-2 text-sm bg-red-100 text-red-600 px-2 py-1 rounded">
+                    {Math.round((1 - product.price / product.originalPrice) * 100)}% OFF
+                  </span>
+                </>
               )}
-              <div className="text-sm text-green-600 mt-1">
-                {product.inStock ? `In Stock (${product.stockQuantity} available)` : 'Out of Stock'}
+              <div className="text-sm font-medium mt-2">
+                {product.inStock ? (
+                  <span className="text-green-600">✓ In Stock</span>
+                ) : (
+                  <span className="text-red-600">✗ Out of Stock</span>
+                )}
               </div>
             </div>
 
-            {/* Description */}
             <div className="mb-6">
               <h3 className="text-lg font-semibold mb-2">Description</h3>
-              <p className="text-gray-700">{product.description}</p>
+              <div className="text-gray-700 leading-relaxed whitespace-pre-line">
+                {showFullDescription || product.description.length <= 300
+                  ? product.description
+                  : product.description.substring(0, 300) + '...'}
+              </div>
+              {product.description.length > 300 && (
+                <button
+                  onClick={() => setShowFullDescription(!showFullDescription)}
+                  className="text-blue-600 hover:underline mt-2 text-sm font-medium"
+                >
+                  {showFullDescription ? 'See Less' : 'See More'}
+                </button>
+              )}
             </div>
 
-            {/* Quantity and Actions */}
-            <div className="mb-6">
-              <div className="flex items-center space-x-4 mb-4">
-                <label className="text-sm font-medium text-gray-700">Quantity:</label>
-                <div className="flex items-center border border-gray-300 rounded">
-                  <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="px-3 py-1 hover:bg-gray-100"
-                  >
-                    -
-                  </button>
-                  <span className="px-4 py-1 border-x border-gray-300">{quantity}</span>
-                  <button
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="px-3 py-1 hover:bg-gray-100"
-                  >
-                    +
-                  </button>
+            {product.variations && product.variations.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-3">Select Variation</h3>
+                <select
+                  value={selectedVariation !== null ? selectedVariation : ''}
+                  onChange={(e) => setSelectedVariation(e.target.value === '' ? null : parseInt(e.target.value))}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Choose a variation</option>
+                  {product.variations.map((v, idx) => (
+                    <option key={idx} value={idx}>
+                      {v.color}
+                      {v.ram && ` | ${v.ram}`}
+                      {v.rom && ` | ${v.rom}`}
+                      {' - ৳'}{v.price.toLocaleString()}
+                      {v.stock === 0 ? ' (Out of Stock)' : ` (${v.stock} available)`}
+                    </option>
+                  ))}
+                </select>
+                {selectedVariation !== null && product.variations[selectedVariation].stock > 0 && (
+                  <div className="flex items-center space-x-4">
+                    <label className="text-sm font-medium text-gray-700">Quantity:</label>
+                    <div className="flex items-center border border-gray-300 rounded">
+                      <button
+                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                        className="px-3 py-1 hover:bg-gray-100"
+                      >
+                        -
+                      </button>
+                      <span className="px-4 py-1 border-x border-gray-300">{quantity}</span>
+                      <button
+                        onClick={() => setQuantity(Math.min(product.variations[selectedVariation].stock, quantity + 1))}
+                        className="px-3 py-1 hover:bg-gray-100"
+                        disabled={quantity >= product.variations[selectedVariation].stock}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!product.variations?.length && product.inStock && (
+              <div className="mb-6">
+                <div className="flex items-center space-x-4 mb-4">
+                  <label className="text-sm font-medium text-gray-700">Quantity:</label>
+                  <div className="flex items-center border border-gray-300 rounded">
+                    <button
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      className="px-3 py-1 hover:bg-gray-100"
+                    >
+                      -
+                    </button>
+                    <span className="px-4 py-1 border-x border-gray-300">{quantity}</span>
+                    <button
+                      onClick={() => setQuantity(Math.min(product.stockQuantity, quantity + 1))}
+                      className="px-3 py-1 hover:bg-gray-100"
+                      disabled={quantity >= product.stockQuantity}
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
               </div>
+            )}
 
-              <div className="flex space-x-4">
-                <button
-                  onClick={handleAddToCart}
-                  disabled={!product.inStock}
-                  className="flex-1 bg-blue-600/90 backdrop-blur-lg text-white py-3 px-6 rounded-2xl hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200 hover:shadow-xl border border-white/20"
-                >
-                  {product.inStock ? 'Add to Cart' : 'Out of Stock'}
-                </button>
-                <button
-                  onClick={handleAddToWishlist}
-                  className="px-6 py-3 bg-white/50 backdrop-blur-lg border border-white/30 rounded-2xl hover:bg-white/80 transform hover:scale-105 transition-all duration-200 hover:shadow-xl"
-                >
-                  ♡ Wishlist
-                </button>
+            {product.inStock ? (
+              <button
+                onClick={handleAddToCart}
+                className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 mb-6"
+              >
+                Add to Cart
+              </button>
+            ) : (
+              <button
+                onClick={async () => {
+                  if (!user) {
+                    alert('Please login to request restock');
+                    return;
+                  }
+                  if (product.variations?.length > 0 && selectedVariation === null) {
+                    alert('Please select a variation to request restock notification');
+                    return;
+                  }
+                  try {
+                    const requestBody = { productId: id };
+                    if (selectedVariation !== null) {
+                      requestBody.variation = product.variations[selectedVariation];
+                    }
+                    await apiCall('/api/restock/requests', {
+                      method: 'POST',
+                      body: JSON.stringify(requestBody)
+                    });
+                    alert('Restock request submitted! You will be notified when available.');
+                  } catch (error) {
+                    console.error('Restock request error:', error);
+                    if (error.message.includes('already have a pending restock request')) {
+                      alert('You already have a pending restock request for this product. You will be notified when it\'s back in stock.');
+                    } else {
+                      alert(`Error: ${error.message || 'Failed to submit request'}`);
+                    }
+                  }
+                }}
+                className="w-full bg-orange-600 text-white py-3 px-6 rounded-lg hover:bg-orange-700 mb-6"
+              >
+                Request Restock Notification
+              </button>
+            )}
+
+            {product.specifications && Object.keys(product.specifications).length > 0 && (
+              <div className="mb-6 pb-6 border-b">
+                <h3 className="text-lg font-semibold mb-3">Specifications</h3>
+                <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                  {Object.entries(product.specifications).map(([key, value]) => (
+                    <div key={key} className="flex justify-between py-2">
+                      <span className="font-medium text-gray-700">{key}</span>
+                      <span className="text-gray-900">{value}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Features */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-2">Key Features</h3>
-              <ul className="list-disc list-inside space-y-1 text-gray-700">
-                {product.features.map((feature, index) => (
-                  <li key={index}>{feature}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        {/* Specifications */}
-        <div className="mt-12 bg-white/60 backdrop-blur-xl rounded-3xl shadow-xl p-6 animate-fade-in hover:shadow-2xl transition-shadow duration-300 border border-white/30">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Specifications</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {Object.entries(product.specifications).map(([key, value], index) => (
-              <div key={key} className="flex justify-between py-2 border-b border-gray-200 hover:bg-gray-50 px-2 rounded transition-colors duration-200 animate-slide-up" style={{animationDelay: `${index * 0.05}s`}}>
-                <span className="font-medium text-gray-700">{key}:</span>
-                <span className="text-gray-900">{value}</span>
+            {product.reviews?.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold mb-3">Customer Reviews</h3>
+                <div className="space-y-4">
+                  {product.reviews.slice(0, 5).map(review => (
+                    <div key={review.id} className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium">{review.userName}</span>
+                        <span className="text-yellow-400">{'⭐'.repeat(review.rating)}</span>
+                      </div>
+                      <p className="text-gray-700 text-sm">{review.comment}</p>
+                      <p className="text-xs text-gray-500 mt-2">{new Date(review.createdAt).toLocaleDateString()}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>

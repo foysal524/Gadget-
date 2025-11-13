@@ -9,26 +9,36 @@ export const getAuthToken = async () => {
   return null;
 };
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
 // API call with authentication
 export const apiCall = async (url, options = {}) => {
   const token = await getAuthToken();
   
   const headers = {
-    'Content-Type': 'application/json',
     ...options.headers,
   };
+
+  // Only set Content-Type if not FormData
+  if (!(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(url, {
+  const fullUrl = url.startsWith('http') ? url : `${API_URL}${url}`;
+
+  const response = await fetch(fullUrl, {
     ...options,
     headers,
   });
 
   if (!response.ok) {
-    throw new Error(`API call failed: ${response.statusText}`);
+    const errorData = await response.json().catch(() => ({ error: response.statusText }));
+    const errorMsg = errorData.error?.message || errorData.error || errorData.message || response.statusText;
+    throw new Error(errorMsg);
   }
 
   return response.json();
